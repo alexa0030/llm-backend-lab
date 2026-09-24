@@ -1,0 +1,6 @@
+-r requirements.txt
+transformers>=4.45
+torch>=2.2
+openvino-genai>=2025.4
+optimum-intel[openvino]>=1.24
+

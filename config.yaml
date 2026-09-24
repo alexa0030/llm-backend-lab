@@ -1,0 +1,27 @@
+{
+  "run": {
+    "backends": ["hf-mock", "openvino-mock"],
+    "baseline": "hf-mock",
+    "candidate": "openvino-mock",
+    "warmup_runs": 1,
+    "measured_runs": 2,
+    "limit": 5,
+    "seed": 42
+  },
+  "generation": {
+    "max_new_tokens": 32,
+    "temperature": 0.0,
+    "do_sample": false
+  },
+  "models": {
+    "hf_model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "openvino_model_dir": "models/qwen2.5-0.5b-instruct-ov",
+    "device": "CPU"
+  },
+  "regression": {
+    "min_similarity": 0.85,
+    "max_latency_regression_pct": 20.0,
+    "min_success_rate": 1.0
+  }
+}
+

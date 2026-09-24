@@ -1,0 +1,7 @@
+{"id":"qa-001","prompt":"用三句话解释什么是大语言模型。","category":"knowledge"}
+{"id":"qa-002","prompt":"Write a Python function that returns the sum of two integers.","category":"coding"}
+{"id":"qa-003","prompt":"把下面这句话翻译成英文：模型部署需要兼顾性能与正确性。","category":"translation"}
+{"id":"qa-004","prompt":"用户说系统响应变慢，请给出三个排查步骤。","category":"reasoning"}
+{"id":"qa-005","prompt":"Summarize the benefit of deterministic decoding in one sentence.","category":"summary"}
+{"id":"qa-006","prompt":"解释 TTFT 和吞吐量的区别。","category":"knowledge"}
+
