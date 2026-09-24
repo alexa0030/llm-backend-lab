@@ -35,6 +35,10 @@ def compare(rows: list[InferenceResult], baseline: str, candidate: str) -> tuple
     grouped: dict[str, list[InferenceResult]] = defaultdict(list)
     for row in rows:
         grouped[row.backend].append(row)
+    missing = [name for name in (baseline, candidate) if name not in grouped]
+    if missing:
+        available = ", ".join(sorted(grouped)) or "none"
+        raise ValueError(f"missing backend results for {', '.join(missing)}; available: {available}")
     summaries = {name: summarize(items) for name, items in grouped.items()}
     base_outputs = {(r.prompt_id, r.run_index): r.output for r in grouped[baseline] if r.success}
     cases = []
@@ -104,11 +108,13 @@ def main() -> int:
     markdown, passed = render_markdown(report, cases, config["regression"])
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(markdown, encoding="utf-8")
-    args.json.write_text(json.dumps({**report, "cases": cases, "passed": passed}, indent=2), encoding="utf-8")
+    args.json.write_text(
+        json.dumps({**report, "cases": cases, "passed": passed}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     print(f"Regression gates: {'PASS' if passed else 'FAIL'}. Report: {args.report}")
     return 0 if passed else 1
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

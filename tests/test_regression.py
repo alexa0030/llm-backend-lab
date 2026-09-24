@@ -1,7 +1,8 @@
 import unittest
 
-from analysis.compare_results import render_markdown
+from analysis.compare_results import compare, render_markdown
 from src.metrics import percentile, text_similarity
+from src.models import InferenceResult
 
 
 class RegressionMetricTests(unittest.TestCase):
@@ -28,6 +29,15 @@ class RegressionMetricTests(unittest.TestCase):
             "min_success_rate": 1.0,
         })
         self.assertFalse(passed)
+
+    def test_compare_explains_missing_backend(self):
+        row = InferenceResult(
+            backend="base", prompt_id="1", prompt="hello", output="hello",
+            input_tokens=1, output_tokens=1, ttft_ms=1, latency_ms=2,
+            tokens_per_second=500, memory_delta_mb=0,
+        )
+        with self.assertRaisesRegex(ValueError, "missing backend results for candidate"):
+            compare([row], "base", "candidate")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # LLM Backend Migration & Validation
 
+[![CI](https://github.com/alexa0030/llm-backend-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/alexa0030/llm-backend-lab/actions/workflows/ci.yml)
+
 一个小而完整的 LLM 推理后端迁移验证 demo：对同一批 prompt 分别运行 baseline 与 candidate backend，同时验证输出正确性、性能与回归门禁。
 
 当前默认配置不下载模型，使用两个确定性的 mock backend 演示完整工程闭环。真实适配器已经实现，可切换到 Hugging Face Transformers 和 OpenVINO GenAI。
@@ -20,10 +22,18 @@ python benchmark/run_benchmark.py
 python analysis/compare_results.py
 ```
 
+无需修改配置文件也可以临时覆盖 workload：
+
+```powershell
+python benchmark/run_benchmark.py --backends hf-mock openvino-mock --limit 3 --runs 1
+python analysis/compare_results.py
+```
+
 结果写入：
 
 - `reports/raw_results.csv`：逐请求原始指标
 - `reports/summary.json`：机器可读汇总
+- `reports/run_metadata.json`：Python、操作系统和运行参数等复现实验所需信息
 - `reports/benchmark_report.md`：可直接阅读的迁移验证报告
 
 ## 项目闭环
@@ -74,7 +84,10 @@ src/             backend adapters, result models, metrics
 tests/           inference, boundary and regression tests
 scripts/         one-command demo and OpenVINO export
 reports/         generated evidence
+.github/         GitHub Actions CI
 ```
+
+每次 push 和 pull request 都会在 Python 3.10、3.12 上运行测试、benchmark demo 与回归门禁。
 
 ## 下一步
 
