@@ -28,9 +28,12 @@ class InferenceResult:
     input_tokens: int
     output_tokens: int
     ttft_ms: float | None
+    tpot_ms: float | None
     latency_ms: float
     tokens_per_second: float
-    memory_delta_mb: float | None
+    peak_rss_mb: float | None
+    peak_rss_delta_mb: float | None
+    model_load_ms: float | None = None
     success: bool = True
     error: str | None = None
     run_index: int = 0

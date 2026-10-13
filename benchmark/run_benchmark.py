@@ -5,7 +5,9 @@ import csv
 import json
 import platform
 import random
+import subprocess
 import sys
+from importlib import metadata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,8 +55,9 @@ def run(config: dict, prompts: list[dict]) -> list[InferenceResult]:
                 except Exception as exc:
                     result = InferenceResult(
                         backend=backend_name, prompt_id=prompt["id"], prompt=prompt["prompt"],
-                        output="", input_tokens=0, output_tokens=0, ttft_ms=None,
-                        latency_ms=0, tokens_per_second=0, memory_delta_mb=None,
+                        output="", input_tokens=0, output_tokens=0, ttft_ms=None, tpot_ms=None,
+                        latency_ms=0, tokens_per_second=0, peak_rss_mb=None,
+                        peak_rss_delta_mb=None, model_load_ms=backend.load_time_ms,
                         success=False, error=f"{type(exc).__name__}: {exc}", run_index=run_index,
                     )
                 results.append(result)
@@ -71,16 +74,55 @@ def write_results(results: list[InferenceResult], output: Path) -> None:
         writer.writerows(row.as_dict() for row in results)
 
 
+def _package_versions() -> dict[str, str]:
+    versions = {}
+    for package in ("torch", "transformers", "openvino", "openvino-genai", "optimum-intel"):
+        try:
+            versions[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            versions[package] = "not-installed"
+    return versions
+
+
+def _git_revision() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def write_metadata(config: dict, prompt_count: int, output: Path) -> None:
+    backends = config["run"]["backends"]
+    eligibility_issues = []
+    if any(name.endswith("-mock") for name in backends):
+        eligibility_issues.append("mock backend present")
+    if config["run"]["warmup_runs"] < 1:
+        eligibility_issues.append("at least 1 warm-up run is required")
+    if config["run"]["measured_runs"] < 3:
+        eligibility_issues.append("at least 3 measured runs per prompt are required")
+    if prompt_count < 5:
+        eligibility_issues.append("at least 5 prompts are required")
     metadata = {
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "python": platform.python_version(),
         "platform": platform.platform(),
         "backends": config["run"]["backends"],
+        "experiment_type": "mock" if any(name.endswith("-mock") for name in backends) else "real",
+        "publishable_performance": not eligibility_issues,
+        "publishability_issues": eligibility_issues,
+        "git_revision": _git_revision(),
+        "packages": _package_versions(),
         "prompt_count": prompt_count,
         "warmup_runs": config["run"]["warmup_runs"],
         "measured_runs": config["run"]["measured_runs"],
         "generation": config["generation"],
+        "models": config["models"],
+        "metric_notes": {
+            "peak_rss": "Peak host process RSS sampled during generation; not GPU VRAM.",
+            "throughput": "Decode throughput after first token when TTFT is available.",
+        },
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -95,6 +137,9 @@ def main() -> int:
     parser.add_argument("--backends", nargs="+", help="Override configured backend names")
     parser.add_argument("--limit", type=int, help="Override the number of prompts")
     parser.add_argument("--runs", type=int, help="Override measured runs per prompt")
+    parser.add_argument("--warmup-runs", type=int, help="Override warm-up runs per backend")
+    parser.add_argument("--openvino-model-dir", help="Override the OpenVINO IR directory")
+    parser.add_argument("--hf-model", help="Override the Hugging Face model ID or local directory")
     args = parser.parse_args()
     config = load_config(args.config)
     if args.backends:
@@ -105,6 +150,14 @@ def main() -> int:
         if args.runs < 1:
             parser.error("--runs must be at least 1")
         config["run"]["measured_runs"] = args.runs
+    if args.warmup_runs is not None:
+        if args.warmup_runs < 0:
+            parser.error("--warmup-runs must be non-negative")
+        config["run"]["warmup_runs"] = args.warmup_runs
+    if args.openvino_model_dir:
+        config["models"]["openvino_model_dir"] = args.openvino_model_dir
+    if args.hf_model:
+        config["models"]["hf_model"] = args.hf_model
     prompts = load_prompts(args.data, config["run"]["limit"], config["run"]["seed"])
     results = run(config, prompts)
     write_results(results, args.output)

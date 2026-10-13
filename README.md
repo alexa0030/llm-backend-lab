@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/alexa0030/llm-backend-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/alexa0030/llm-backend-lab/actions/workflows/ci.yml)
 
-一个小而完整的 LLM 推理后端迁移验证 demo：对同一批 prompt 分别运行 baseline 与 candidate backend，同时验证输出正确性、性能与回归门禁。
+一个可复现的 LLM 推理后端迁移验证框架：对同一批 prompt 分别运行 baseline 与 candidate backend，同时验证输出正确性、性能、资源占用与回归门禁。
 
-当前默认配置不下载模型，使用两个确定性的 mock backend 演示完整工程闭环。真实适配器已经实现，可切换到 Hugging Face Transformers 和 OpenVINO GenAI。
+默认配置运行真实的 Qwen2.5-0.5B-Instruct，对比 Hugging Face Transformers CPU baseline 与 Optimum/OpenVINO INT8。另保留 OpenVINO GenAI adapter 用于兼容性验证与问题复现。Mock backend 仅用于 CI 和框架单元测试，不属于模型性能实验。
 
-## 30 秒运行
+## 框架自测（30 秒，无模型下载）
 
 环境要求：Python 3.10+。默认 demo 无第三方依赖。
 
@@ -18,15 +18,15 @@
 
 ```powershell
 python -m unittest discover -s tests -v
-python benchmark/run_benchmark.py
-python analysis/compare_results.py
+python benchmark/run_benchmark.py --config config.mock.yaml
+python analysis/compare_results.py --config config.mock.yaml
 ```
 
 无需修改配置文件也可以临时覆盖 workload：
 
 ```powershell
-python benchmark/run_benchmark.py --backends hf-mock openvino-mock --limit 3 --runs 1
-python analysis/compare_results.py
+python benchmark/run_benchmark.py --config config.mock.yaml --limit 3 --runs 1
+python analysis/compare_results.py --config config.mock.yaml
 ```
 
 结果写入：
@@ -47,32 +47,58 @@ JSONL prompts
 
 统一结果结构包含成功状态、输出文本、输入/输出 token、TTFT、端到端延迟、tokens/s 和内存变化。`config.yaml` 定义 workload、生成参数与回归阈值；文件内容采用 JSON 语法（同时也是合法 YAML），因此核心 demo 无需 PyYAML。
 
-## 切换真实模型
+Mock 报告会被自动标记为 `MOCK FRAMEWORK SELF-TEST`，其中人工延迟产生的性能变化不得作为 OpenVINO 性能结论引用。
+
+## 真实模型实验
 
 真实运行会下载模型并消耗数 GB 磁盘与内存：
 
 ```powershell
 python -m pip install -r requirements-real.txt
-./scripts/export_openvino.ps1
+./scripts/run_real.ps1
 ```
 
-随后把 `config.yaml` 中的 backend 改为：
+默认 `config.yaml` 已使用真实 backend：
 
 ```json
-"backends": ["huggingface", "openvino"],
+"backends": ["huggingface", "openvino-optimum"],
 "baseline": "huggingface",
-"candidate": "openvino"
+"candidate": "openvino-optimum"
 ```
 
-建议第一次把 `limit` 和 `measured_runs` 都设为 `1`，确认模型和设备可用后再扩大 workload。OpenVINO 模型目录由 `models.openvino_model_dir` 指定。
+第一次可把 `limit` 和 `measured_runs` 都设为 `1`，确认链路后再扩大 workload。真实报告只有在模型、软件版本、生成参数和硬件环境全部记录后才可作为实验结果引用。
 
 ## 指标口径
 
-- **TTFT**：OpenVINO 使用 GenAI `PerfMetrics`；HF 的简单同步实现无法可靠拆分首 token，因此记为空值，不伪造数字。
+- **TTFT**：HF 扩展 `TextIteratorStreamer`，在收到首个生成 token ID 时打点；OpenVINO 使用 GenAI `PerfMetrics`。
+- **TPOT**：首 token 之后的平均单 token 时间；吞吐量同样按 decode 阶段计算。
 - **E2E latency**：单次 `generate` 调用的墙钟时间。
 - **Tokens/s**：输出 token 数除以 E2E latency；OpenVINO 使用官方 throughput 指标。
 - **Similarity**：当前 demo 使用标准库 `SequenceMatcher`，适合作为轻量 smoke gate；生产级验证可替换为 embedding、ROUGE 或 Who What Benchmark。
-- **Memory delta**：安装 `psutil` 后记录请求前后 RSS 差值；它不是峰值内存。
+- **Peak RSS**：后台线程以 10ms 间隔采样当前进程的主机内存峰值。它不是 GPU 显存，也不代表整个系统的内存峰值。
+- **Model load**：backend 构造及模型加载耗时，和逐请求 latency 分开记录。
+
+## 回归验证设计
+
+- warm-up 数据不进入统计分布；正式请求重复执行并计算 P50/P95。
+- 相同 prompt、生成参数和随机性设置用于两个 backend。
+- 逐 case 保存输出与相似度，失败请求保存异常类型和消息。
+- 正确性、延迟退化和成功率分别设置 gate，任一失败都会返回非零退出码。
+- `run_metadata.json` 固化 Git revision、Python/依赖版本、模型、设备和生成参数。
+- 只有真实 backend、至少 1 次 warm-up、5 条 prompt、每条 3 次测量同时满足时，运行才标记为 performance-publishable。
+
+### Windows 路径注意事项
+
+OpenVINO 的部分 Windows 原生组件对非 ASCII 安装路径兼容性有限。真实实验建议把仓库和虚拟环境放在纯英文路径；框架自测不受影响。若 GenAI `LLMPipeline` 原生崩溃，可先用 `openvino-optimum` 验证 Runtime/IR，并保留环境版本与复现日志，不应把崩溃误报为模型转换失败。
+
+## 项目定位
+
+本项目定位为**推理后端自动化验证与性能回归框架**，不是聊天机器人，也不预设 OpenVINO 一定更快。可在面试中重点说明：迁移 backend 后，如何使用同一 workload 同时验证输出质量、延迟分布、decode 吞吐、资源占用与异常 case，并保证实验可复现。
+
+详细设计与排障记录：
+
+- [实验方法](docs/experiment_methodology.md)
+- [已知问题与兼容性排查](docs/known_issues.md)
 
 ## 目录
 

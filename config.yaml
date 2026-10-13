@@ -1,10 +1,10 @@
 {
   "run": {
-    "backends": ["hf-mock", "openvino-mock"],
-    "baseline": "hf-mock",
-    "candidate": "openvino-mock",
-    "warmup_runs": 1,
-    "measured_runs": 2,
+    "backends": ["huggingface", "openvino-optimum"],
+    "baseline": "huggingface",
+    "candidate": "openvino-optimum",
+    "warmup_runs": 2,
+    "measured_runs": 3,
     "limit": 5,
     "seed": 42
   },
@@ -15,7 +15,7 @@
   },
   "models": {
     "hf_model": "Qwen/Qwen2.5-0.5B-Instruct",
-    "openvino_model_dir": "models/qwen2.5-0.5b-instruct-ov",
+    "openvino_model_dir": "models/qwen2.5-0.5b-instruct-ov-2025b",
     "device": "CPU"
   },
   "regression": {
