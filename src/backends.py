@@ -214,11 +214,10 @@ class OpenVINOBackend(Backend):
             generation.temperature = config.temperature
         start = time.perf_counter()
         with PeakRssSampler() as memory:
-            tokenized = self.pipe.get_tokenizer().encode([prompt])
-            input_tokens = int(tokenized.input_ids.get_shape()[1])
             result = self.pipe.generate([prompt], generation)
         elapsed = (time.perf_counter() - start) * 1000
         perf = result.perf_metrics
+        input_tokens = int(perf.get_num_input_tokens())
         count = int(perf.get_num_generated_tokens())
         return InferenceResult(
             backend=self.name, prompt_id=prompt_id, prompt=prompt, output=result.texts[0],

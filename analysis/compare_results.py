@@ -129,6 +129,12 @@ def render_markdown(
     ]
     for name, ok in checks.items():
         lines.append(f"- {'PASS' if ok else 'FAIL'} — {name}")
+    if not passed and not is_mock:
+        lines += [
+            "", "> [!CAUTION]",
+            "> The candidate may be faster, but the migration is **not accepted** because at least one "
+            "regression gate failed. Performance deltas must not be presented as a successful migration.",
+        ]
     lines += [
         "", "## Per-prompt correctness", "",
         "| Prompt | Run | Similarity | Exact | First token divergence |",
@@ -142,6 +148,7 @@ def render_markdown(
         "", "## Metric scope", "",
         "- HF TTFT is measured from generation start until the streamer receives the first generated token ID.",
         "- TPOT and decode throughput exclude TTFT where available.",
+        "- Input tokens include each backend's applied chat template; GenAI uses PerfMetrics.get_num_input_tokens().",
         "- Peak RSS is sampled host-process memory; it is neither GPU VRAM nor whole-system memory.",
         "- Warm-up requests are excluded from reported distributions.", "",
     ]

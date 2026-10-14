@@ -1,6 +1,6 @@
 # Known issues and compatibility findings
 
-## OpenVINO GenAI `LLMPipeline` native crash on the test machine
+## Resolved: OpenVINO GenAI `LLMPipeline` native crash on the test machine
 
 ### Symptom
 
@@ -14,11 +14,17 @@ Constructing `openvino_genai.LLMPipeline` exits the Python process with Windows 
 4. Verified that Optimum Intel `OVModelForCausalLM` can load the IR and generate text.
 5. Reproduced the GenAI crash with the environment and model copied to ASCII-only paths.
 
-This narrows the failure to the GenAI pipeline on the tested host rather than the model conversion or base Runtime.
+This initially narrowed the failure to the GenAI pipeline process rather than the model conversion or base Runtime.
+
+### Root cause and verified fix
+
+The failing virtual environment was created from an Anaconda-build Python 3.12 interpreter. `pip check` reported no dependency conflicts, but the inherited native runtime/DLL environment caused the GenAI C++ extension to terminate with `0xC0000005`.
+
+A fresh ASCII-only venv created from the official python.org CPython 3.12 installation, with the same aligned OpenVINO 2025.4.1 packages and the same model IR, successfully constructed `LLMPipeline`, generated text, and passed all six real smoke cases. After the full project dependency set was installed, both Transformers and OpenVINO GenAI passed all twelve backend smoke cases, confirming that the fix remained stable.
 
 ### Current status and fallback
 
-The default real candidate is `openvino-genai`, so the intended migration cannot silently fall back. Its isolated smoke test currently fails at model load and blocks the full comparison. `config.optimum.yaml` is available only for Runtime/IR diagnosis. Reports identify that backend explicitly; fallback results are never labelled as GenAI results.
+The default real candidate is `openvino-genai`, so the intended migration cannot silently fall back. `scripts/run_real.ps1` now rejects Anaconda-derived interpreters before loading native components. `config.optimum.yaml` remains available only for Runtime/IR diagnosis; fallback results are never labelled as GenAI results.
 
 ## Non-ASCII Windows paths
 

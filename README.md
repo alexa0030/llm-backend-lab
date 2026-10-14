@@ -58,6 +58,8 @@ python -m pip install -r requirements-real.txt
 ./scripts/run_real.ps1
 ```
 
+Windows 上请用 [python.org](https://www.python.org/downloads/windows/) 的官方 CPython 创建独立英文路径 venv。不要从 Anaconda/Miniconda 的 `python.exe` 创建真实 GenAI 实验环境；即使 `pip check` 正常，继承的原生 DLL 搜索环境仍可能让 `LLMPipeline` 以 `0xC0000005` 退出。
+
 默认 `config.yaml` 已使用真实 backend：
 
 ```json
@@ -85,6 +87,7 @@ python smoke/run_real_smoke.py --hf-model models/qwen2.5-0.5b-instruct-hf --open
 - **Similarity**：当前 demo 使用标准库 `SequenceMatcher`，适合作为轻量 smoke gate；生产级验证可替换为 embedding、ROUGE 或 Who What Benchmark。
 - **Peak RSS**：后台线程以 10ms 间隔采样当前进程的主机内存峰值。它不是 GPU 显存，也不代表整个系统的内存峰值。
 - **Model load**：backend 构造及模型加载耗时，和逐请求 latency 分开记录。
+- **Input tokens**：Transformers 读取套用 chat template 后的 `input_ids`；GenAI 读取 `PerfMetrics.get_num_input_tokens()`，包含 GenAI 自动应用的模型 chat template。
 
 ## 回归验证设计
 

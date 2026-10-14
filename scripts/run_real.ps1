@@ -22,6 +22,11 @@ if (-not (Test-Path $Python)) {
     throw "Missing .venv. Run: python -m venv .venv; .\.venv\Scripts\python -m pip install -r requirements-real.txt"
 }
 
+& $Python -c "import sys; raise SystemExit(1 if 'Anaconda' in sys.version or 'Continuum' in sys.version else 0)"
+if ($LASTEXITCODE -ne 0) {
+    throw "Real OpenVINO GenAI validation requires a venv created from official CPython. An Anaconda-derived interpreter caused native DLL conflicts and 0xC0000005 on this host."
+}
+
 Push-Location $ProjectRoot
 try {
     if (-not (Test-Path $OpenVinoModel)) {

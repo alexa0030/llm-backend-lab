@@ -1,11 +1,11 @@
 {
   "experiment_type": "REAL_SMOKE",
   "environment": {
-    "timestamp_utc": "2026-10-14T05:32:19.153200+00:00",
+    "timestamp_utc": "2026-10-14T05:48:28.777373+00:00",
     "platform": "Windows-11-10.0.26200-SP0",
     "machine": "AMD64",
     "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
-    "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]",
+    "python": "3.12.0 (tags/v3.12.0:0fb18b0, Oct  2 2023, 13:03:39) [MSC v.1935 64 bit (AMD64)]",
     "selected_device": "CPU",
     "openvino_devices": [
       "CPU",
@@ -37,7 +37,7 @@
           "status": "PASS",
           "detail": "Model adapter constructed successfully.",
           "evidence": {
-            "model_load_ms": 15381.539699999848
+            "model_load_ms": 11095.537500001228
           }
         },
         {
@@ -51,13 +51,13 @@
             "output": "机器学习是一种人工智能的分支，它使计算机系统能够通过数据自动改进",
             "input_tokens": 36,
             "output_tokens": 16,
-            "ttft_ms": 633.4962000000814,
-            "tpot_ms": 267.9613333333691,
-            "latency_ms": 4652.916200000618,
-            "tokens_per_second": 3.731881714276686,
-            "peak_rss_mb": 2334.45703125,
-            "peak_rss_delta_mb": 17.3359375,
-            "model_load_ms": 15381.539699999848,
+            "ttft_ms": 491.3700999968569,
+            "tpot_ms": 162.01987333333818,
+            "latency_ms": 2921.6681999969296,
+            "tokens_per_second": 6.172082346605773,
+            "peak_rss_mb": 2331.2890625,
+            "peak_rss_delta_mb": 15.7890625,
+            "model_load_ms": 11095.537500001228,
             "success": true,
             "error": null,
             "run_index": 0
@@ -80,13 +80,13 @@
             "output": "常见的水果有：\n\n",
             "input_tokens": 35,
             "output_tokens": 4,
-            "ttft_ms": 628.3805999992182,
-            "tpot_ms": 226.9708666669127,
-            "latency_ms": 1309.2931999999564,
-            "tokens_per_second": 4.405851793602802,
-            "peak_rss_mb": 2337.8203125,
-            "peak_rss_delta_mb": 4.39453125,
-            "model_load_ms": 15381.539699999848,
+            "ttft_ms": 423.70589999700314,
+            "tpot_ms": 145.45653333334485,
+            "latency_ms": 860.0754999970377,
+            "tokens_per_second": 6.874906042950202,
+            "peak_rss_mb": 2335.3046875,
+            "peak_rss_delta_mb": 4.5703125,
+            "model_load_ms": 11095.537500001228,
             "success": true,
             "error": null,
             "run_index": 0
@@ -111,48 +111,81 @@
       "cases": [
         {
           "case": "model_load",
-          "status": "FAIL",
-          "detail": "Worker terminated before producing a result (exit code 3221225477). Windows status 0xC0000005 indicates a native access violation.",
+          "status": "PASS",
+          "detail": "Model adapter constructed successfully.",
           "evidence": {
-            "stderr_tail": "",
-            "stdout_tail": ""
+            "model_load_ms": 3582.3101999994833
           }
         },
         {
           "case": "normal_generation",
-          "status": "NOT_RUN",
-          "detail": "Blocked because model loading did not complete.",
-          "evidence": {}
+          "status": "PASS",
+          "detail": "Generated non-empty text.",
+          "evidence": {
+            "backend": "openvino-genai",
+            "prompt_id": "normal",
+            "prompt": "用一句话解释什么是机器学习。",
+            "output": "机器学习是一种人工智能的分支，它使计算机系统能够通过数据学习和",
+            "input_tokens": 36,
+            "output_tokens": 16,
+            "ttft_ms": 405.0332336425781,
+            "tpot_ms": 34.879512786865234,
+            "latency_ms": 952.7449000015622,
+            "tokens_per_second": 28.67012596130371,
+            "peak_rss_mb": 1158.390625,
+            "peak_rss_delta_mb": 1005.04296875,
+            "model_load_ms": 3582.3101999994833,
+            "success": true,
+            "error": null,
+            "run_index": 0
+          }
         },
         {
           "case": "empty_input",
-          "status": "NOT_RUN",
-          "detail": "Blocked because model loading did not complete.",
+          "status": "PASS",
+          "detail": "Rejected empty prompt: prompt must not be empty",
           "evidence": {}
         },
         {
           "case": "max_generation_length",
-          "status": "NOT_RUN",
-          "detail": "Blocked because model loading did not complete.",
-          "evidence": {}
+          "status": "PASS",
+          "detail": "Generation respected max_new_tokens=4.",
+          "evidence": {
+            "backend": "openvino-genai",
+            "prompt_id": "max-length",
+            "prompt": "请列出三种常见水果。",
+            "output": "三种常见水果包括",
+            "input_tokens": 35,
+            "output_tokens": 4,
+            "ttft_ms": 205.87689208984375,
+            "tpot_ms": 39.182498931884766,
+            "latency_ms": 324.6924000013678,
+            "tokens_per_second": 25.52159881591797,
+            "peak_rss_mb": 1159.6171875,
+            "peak_rss_delta_mb": 1.21875,
+            "model_load_ms": 3582.3101999994833,
+            "success": true,
+            "error": null,
+            "run_index": 0
+          }
         },
         {
           "case": "result_recording",
-          "status": "NOT_RUN",
-          "detail": "Blocked because model loading did not complete.",
+          "status": "PASS",
+          "detail": "Result is complete and JSON serializable.",
           "evidence": {}
         },
         {
           "case": "exception_handling",
-          "status": "NOT_RUN",
-          "detail": "Blocked because model loading did not complete.",
+          "status": "PASS",
+          "detail": "Invalid config produced a controlled exception: max_new_tokens must be between 1 and 4096",
           "evidence": {}
         }
       ]
     }
   ],
   "comparison": {
-    "status": "NOT_RUN",
+    "status": "READY",
     "reason": "One or more real smoke cases failed or were not run; comparing performance would be invalid."
   }
 }
