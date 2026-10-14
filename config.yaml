@@ -1,8 +1,8 @@
 {
   "run": {
-    "backends": ["huggingface", "openvino-optimum"],
+    "backends": ["huggingface", "openvino-genai"],
     "baseline": "huggingface",
-    "candidate": "openvino-optimum",
+    "candidate": "openvino-genai",
     "warmup_runs": 2,
     "measured_runs": 3,
     "limit": 5,

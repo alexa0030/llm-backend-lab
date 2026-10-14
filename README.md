@@ -4,7 +4,7 @@
 
 一个可复现的 LLM 推理后端迁移验证框架：对同一批 prompt 分别运行 baseline 与 candidate backend，同时验证输出正确性、性能、资源占用与回归门禁。
 
-默认配置运行真实的 Qwen2.5-0.5B-Instruct，对比 Hugging Face Transformers CPU baseline 与 Optimum/OpenVINO INT8。另保留 OpenVINO GenAI adapter 用于兼容性验证与问题复现。Mock backend 仅用于 CI 和框架单元测试，不属于模型性能实验。
+默认配置运行真实的 Qwen2.5-0.5B-Instruct，对比 Hugging Face Transformers CPU baseline 与 OpenVINO GenAI。Optimum/OpenVINO 是单独的 fallback 配置，不能替代 GenAI 验收。Mock backend 仅用于 CI 和框架单元测试，不属于模型性能实验。
 
 ## 框架自测（30 秒，无模型下载）
 
@@ -61,10 +61,18 @@ python -m pip install -r requirements-real.txt
 默认 `config.yaml` 已使用真实 backend：
 
 ```json
-"backends": ["huggingface", "openvino-optimum"],
+"backends": ["huggingface", "openvino-genai"],
 "baseline": "huggingface",
-"candidate": "openvino-optimum"
+"candidate": "openvino-genai"
 ```
+
+先运行隔离式真实 Smoke Test；它逐项验证模型加载、正常生成、空输入、最大生成长度、结果记录和异常处理。任何原生崩溃都会被父进程记录为 `FAIL`，依赖项记录为 `NOT_RUN`：
+
+```powershell
+python smoke/run_real_smoke.py --hf-model models/qwen2.5-0.5b-instruct-hf --openvino-model-dir models/qwen2.5-0.5b-instruct-ov-2025b --device CPU
+```
+
+只有两个目标 backend 全部通过后，才应运行 `config.yaml` 的性能对比。若只需定位 OpenVINO Runtime/IR，可显式使用 `config.optimum.yaml`；该结果必须标为 Optimum fallback，不能写成 GenAI 性能。
 
 第一次可把 `limit` 和 `measured_runs` 都设为 `1`，确认链路后再扩大 workload。真实报告只有在模型、软件版本、生成参数和硬件环境全部记录后才可作为实验结果引用。
 
@@ -73,7 +81,7 @@ python -m pip install -r requirements-real.txt
 - **TTFT**：HF 扩展 `TextIteratorStreamer`，在收到首个生成 token ID 时打点；OpenVINO 使用 GenAI `PerfMetrics`。
 - **TPOT**：首 token 之后的平均单 token 时间；吞吐量同样按 decode 阶段计算。
 - **E2E latency**：单次 `generate` 调用的墙钟时间。
-- **Tokens/s**：输出 token 数除以 E2E latency；OpenVINO 使用官方 throughput 指标。
+- **Tokens/s**：decode 阶段生成速率；Transformers 以首 token 后的墙钟时间计算，OpenVINO GenAI 使用官方 `PerfMetrics` throughput。报告必须同时保留 token 数和 E2E latency，避免混用口径。
 - **Similarity**：当前 demo 使用标准库 `SequenceMatcher`，适合作为轻量 smoke gate；生产级验证可替换为 embedding、ROUGE 或 Who What Benchmark。
 - **Peak RSS**：后台线程以 10ms 间隔采样当前进程的主机内存峰值。它不是 GPU 显存，也不代表整个系统的内存峰值。
 - **Model load**：backend 构造及模型加载耗时，和逐请求 latency 分开记录。

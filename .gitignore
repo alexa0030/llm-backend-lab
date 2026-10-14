@@ -5,4 +5,5 @@ __pycache__/
 models/
 reports/*.csv
 reports/*.json
+!reports/real_smoke_results.json
 

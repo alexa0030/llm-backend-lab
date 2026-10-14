@@ -1,0 +1,158 @@
+{
+  "experiment_type": "REAL_SMOKE",
+  "environment": {
+    "timestamp_utc": "2026-10-14T05:32:19.153200+00:00",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]",
+    "selected_device": "CPU",
+    "openvino_devices": [
+      "CPU",
+      "GPU.0",
+      "GPU.1",
+      "GPU.2"
+    ],
+    "versions": {
+      "torch": "2.7.1",
+      "transformers": "4.55.4",
+      "openvino": "2025.4.1",
+      "openvino-genai": "2025.4.1.0",
+      "openvino-tokenizers": "2025.4.1.0",
+      "optimum-intel": "1.26.1",
+      "psutil": "7.2.2"
+    }
+  },
+  "models": {
+    "hf_model": "llm-backend-hf",
+    "openvino_model_dir": "llm-backend-model-copy",
+    "source": "local pre-downloaded artifacts; absolute paths omitted"
+  },
+  "backends": [
+    {
+      "backend": "huggingface",
+      "cases": [
+        {
+          "case": "model_load",
+          "status": "PASS",
+          "detail": "Model adapter constructed successfully.",
+          "evidence": {
+            "model_load_ms": 15381.539699999848
+          }
+        },
+        {
+          "case": "normal_generation",
+          "status": "PASS",
+          "detail": "Generated non-empty text.",
+          "evidence": {
+            "backend": "huggingface",
+            "prompt_id": "normal",
+            "prompt": "用一句话解释什么是机器学习。",
+            "output": "机器学习是一种人工智能的分支，它使计算机系统能够通过数据自动改进",
+            "input_tokens": 36,
+            "output_tokens": 16,
+            "ttft_ms": 633.4962000000814,
+            "tpot_ms": 267.9613333333691,
+            "latency_ms": 4652.916200000618,
+            "tokens_per_second": 3.731881714276686,
+            "peak_rss_mb": 2334.45703125,
+            "peak_rss_delta_mb": 17.3359375,
+            "model_load_ms": 15381.539699999848,
+            "success": true,
+            "error": null,
+            "run_index": 0
+          }
+        },
+        {
+          "case": "empty_input",
+          "status": "PASS",
+          "detail": "Rejected empty prompt: prompt must not be empty",
+          "evidence": {}
+        },
+        {
+          "case": "max_generation_length",
+          "status": "PASS",
+          "detail": "Generation respected max_new_tokens=4.",
+          "evidence": {
+            "backend": "huggingface",
+            "prompt_id": "max-length",
+            "prompt": "请列出三种常见水果。",
+            "output": "常见的水果有：\n\n",
+            "input_tokens": 35,
+            "output_tokens": 4,
+            "ttft_ms": 628.3805999992182,
+            "tpot_ms": 226.9708666669127,
+            "latency_ms": 1309.2931999999564,
+            "tokens_per_second": 4.405851793602802,
+            "peak_rss_mb": 2337.8203125,
+            "peak_rss_delta_mb": 4.39453125,
+            "model_load_ms": 15381.539699999848,
+            "success": true,
+            "error": null,
+            "run_index": 0
+          }
+        },
+        {
+          "case": "result_recording",
+          "status": "PASS",
+          "detail": "Result is complete and JSON serializable.",
+          "evidence": {}
+        },
+        {
+          "case": "exception_handling",
+          "status": "PASS",
+          "detail": "Invalid config produced a controlled exception: max_new_tokens must be between 1 and 4096",
+          "evidence": {}
+        }
+      ]
+    },
+    {
+      "backend": "openvino-genai",
+      "cases": [
+        {
+          "case": "model_load",
+          "status": "FAIL",
+          "detail": "Worker terminated before producing a result (exit code 3221225477). Windows status 0xC0000005 indicates a native access violation.",
+          "evidence": {
+            "stderr_tail": "",
+            "stdout_tail": ""
+          }
+        },
+        {
+          "case": "normal_generation",
+          "status": "NOT_RUN",
+          "detail": "Blocked because model loading did not complete.",
+          "evidence": {}
+        },
+        {
+          "case": "empty_input",
+          "status": "NOT_RUN",
+          "detail": "Blocked because model loading did not complete.",
+          "evidence": {}
+        },
+        {
+          "case": "max_generation_length",
+          "status": "NOT_RUN",
+          "detail": "Blocked because model loading did not complete.",
+          "evidence": {}
+        },
+        {
+          "case": "result_recording",
+          "status": "NOT_RUN",
+          "detail": "Blocked because model loading did not complete.",
+          "evidence": {}
+        },
+        {
+          "case": "exception_handling",
+          "status": "NOT_RUN",
+          "detail": "Blocked because model loading did not complete.",
+          "evidence": {}
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "status": "NOT_RUN",
+    "reason": "One or more real smoke cases failed or were not run; comparing performance would be invalid."
+  }
+}

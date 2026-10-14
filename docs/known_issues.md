@@ -4,7 +4,7 @@
 
 ### Symptom
 
-Constructing `openvino_genai.LLMPipeline` exits the Python process with Windows status `-1073741819` before inference begins.
+Constructing `openvino_genai.LLMPipeline` exits the Python process with Windows status `0xC0000005` (`3221225477`, signed `-1073741819`) before inference begins.
 
 ### Isolation performed
 
@@ -16,9 +16,9 @@ Constructing `openvino_genai.LLMPipeline` exits the Python process with Windows 
 
 This narrows the failure to the GenAI pipeline on the tested host rather than the model conversion or base Runtime.
 
-### Current fallback
+### Current status and fallback
 
-The default real candidate is `openvino-optimum`. The `openvino-genai` adapter remains available for reproduction and future version checks. Reports identify the backend explicitly; results from the fallback are not labelled as GenAI results.
+The default real candidate is `openvino-genai`, so the intended migration cannot silently fall back. Its isolated smoke test currently fails at model load and blocks the full comparison. `config.optimum.yaml` is available only for Runtime/IR diagnosis. Reports identify that backend explicitly; fallback results are never labelled as GenAI results.
 
 ## Non-ASCII Windows paths
 

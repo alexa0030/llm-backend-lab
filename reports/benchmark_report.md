@@ -1,6 +1,8 @@
-# LLM Backend Validation Report
+# Optimum/OpenVINO Fallback Validation Report
 
 **Experiment type: REAL MODEL EXPERIMENT**
+
+**Backend scope: Transformers vs `openvino-optimum`; this is not an OpenVINO GenAI result.**
 
 **Regression gates: FAIL**
 
